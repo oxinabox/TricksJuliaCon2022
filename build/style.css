@@ -1,0 +1,165 @@
+/* Lora used for body */
+@font-face{
+  font-family: 'Lora';
+  src: url('fonts/Lora/Lora-Regular.ttf');
+}
+@font-face{
+  font-family: 'Lora';
+  src: url('fonts/Lora/Lora-Bold.ttf');
+  font-weight: bold;
+}
+@font-face{
+  font-family: 'Lora';
+  src: url('fonts/Lora/Lora-Italic.ttf');
+  font-style: italic;
+}
+@font-face{
+  font-family: 'Lora';
+  src: url('fonts/Lora/Lora-BoldItalic.ttf');
+  font-weight: bold;
+  font-style: italic;
+}
+
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Nunito Regular'), local('Nunito-Regular'), url(https://fonts.gstatic.com/s/nunito/v12/XRXV3I6Li01BKofIOOaBTMnFcQIG.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Nunito Regular'), local('Nunito-Regular'), url(https://fonts.gstatic.com/s/nunito/v12/XRXV3I6Li01BKofIMeaBTMnFcQIG.woff2) format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Nunito Regular'), local('Nunito-Regular'), url(https://fonts.gstatic.com/s/nunito/v12/XRXV3I6Li01BKofIOuaBTMnFcQIG.woff2) format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Nunito Regular'), local('Nunito-Regular'), url(https://fonts.gstatic.com/s/nunito/v12/XRXV3I6Li01BKofIO-aBTMnFcQIG.woff2) format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Nunito Regular'), local('Nunito-Regular'), url(https://fonts.gstatic.com/s/nunito/v12/XRXV3I6Li01BKofINeaBTMnFcQ.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+
+/* Yanone Kaffeesatz used for h1, h2, h3 */
+@font-face{
+  font-family: 'Yanone Kaffeesatz';
+  src: url('fonts/Yanone_Kaffeesatz/YanoneKaffeesatz-Regular.ttf');
+}
+@font-face{
+  font-family: 'Yanone_Kaffeesatz';
+  src: url('fonts/Yanone_Kaffeesatz/YanoneKaffeesatz-Bold.ttf');
+  font-weight: bold;
+}
+
+/* Ubuntu Mono used for code, do we need Italic for code ? */
+@font-face {
+  font-family: JuliaMono-Regular;
+  src: url("https://cdn.jsdelivr.net/gh/cormullion/juliamono/webfonts/JuliaMono-Regular.woff2");
+}
+/****************************************/
+
+body {
+  font-family: 'Nunito';
+}
+.remark-slide-content {
+  /* overriding the remark style sheet*/
+  font-size: 25px;
+}
+
+h1, h2, h3 {
+  font-family: 'Yanone Kaffeesatz';
+  font-weight: normal;
+  text-align: center;
+}
+.remark-code, .remark-inline-code {
+  font-family: 'JuliaMono-Regular'; 
+  text-align: left;
+  overflow-x: visible !important;
+  white-space: pre-wrap;
+}
+
+/* My additions */
+.row {
+  display: flex;
+}
+.col {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+
+/*****************************************/
+
+.funfact, .unfunfact {
+  display: block;
+  border-radius: 10px;
+  border-style: solid;
+  border-width: 3px;
+  padding: 5px;
+}
+
+.funfact {
+  background-color: rgb(143, 182, 255);
+}
+
+
+.unfunfact {
+  background-color: #f35f5f;
+}
+.unfunfact::before {
+  display: block;
+  font-family: 'Yanone Kaffeesatz';
+  font-weight: bold;
+  content: "Want more evil?";
+}
+
+
+/******************************************/
+
+img,svg{
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.image-90 img {width: 90%;}
+.image-80 img {width: 80%;}
+.image-70 img {width: 70%;}
+.image-60 img {width: 60%;}
+.image-50 img {width: 50%;}
+.image-40 img {width: 40%;}
+.image-30 img {width: 30%;}
+.image-20 img {width: 10%;}
+.image-10 img {width: 10%;}
+
+.image-float {float: right;}
+
+/***********************************************/
+/* Colored text, with weight increased since color decreases contrast */
+.blue {color: blue; font-weight: 700;}
+.purple {color: purple; font-weight: 700;}
+.red {color: maroon; font-weight: 700;}
+.green {color: forestgreen; font-weight: 700;}
