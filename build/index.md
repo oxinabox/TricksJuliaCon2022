@@ -6,17 +6,17 @@
 
 
 
-# ExprTools.jl
+# Tricks.jl
 
 
 
 
 
 
-## Meta-programming from reflection
+## Abusing backedges for Fun and Profit
 
 
-<br> <br> <br> .row[ .col[     **Lyndon White** <br>     Research Software Engineering Group Lead ] .col[ **JuliaCon 2021** .image-60[![InveniaLabs](https://www.invenia.ca/wp-content/themes/relish_theme/img/labs-logo.png)]     ]  ]
+<br> <br> <br> .row[ .col[     **Frames White** <br>     Research Software Engineering Group Lead ] .col[ **JuliaCon 2021** .image-60[![InveniaLabs](https://www.invenia.ca/wp-content/themes/relish_theme/img/labs-logo.png)]     ]  ]
 
 
 
@@ -28,20 +28,25 @@
 
 
 
-### History
+### History and Credit
 
 
-  * Was initially using `MacroTools.splitdef`, `MacroTools.combinedef` (credit Cédric St-Jean).
-  * Curtis Vogt noticed some edge cases, and did most of the work writing `ExprTools.splitdef` at start of 2020.
-  * At end of 2020 I added `signature` which is most of what we will talk about today.
+  * Was initially created at JuliaCon 2019 (Baltimore) Hackathon.
+  * With a lot of help from Nathan Daly.
+  * Since then Mason Protter has made some nice additions and good clean-up.
 
 
-.funfact[There are a lot of edge cases, so we needed a lot of tests.
+.funfact[It was proposed to add the key functionality `static_hasmethod` to Base. See PR [#32732](https://github.com/JuliaLang/julia/pull/32732).
 
 
-  * about 590 tests
-  * about 1270 lines of test code
-  * about 570 lines of source code
+Jameson said:
+
+
+  * This would be more cleanly implemented with a `tfunc`.
+  * If we added this feature, people would use it, and he thinks that:
+
+      * using this would make invalidations a way bigger problem.
+      * the kind of coding style this allows for is bad.
 
 
 ]
@@ -54,43 +59,25 @@
 
 
 
-## There are many ways to declare a function, that are (almost) the same
+### What can Tricks.jl do?
 
 
-  * .blue[`foo(x::Set) = 1`]
-  * .blue[`function foo(x::Set) 2 end`]
-  * .blue[`foo(x::Set{<:Any}) = 3`]
-  * .blue[`foo(x::Set{T} where T) = 4`]
-  * .purple[`foo(x::Set{T}) where T = 5`]
-  * .red[`(::typeof(foo))(x::Set) = 6`]
-  * .green[`const foo = (x::Set) -> 7`]
-  * .green[`const foo = function (x::Set) 8 end`]
-
-
----
-
-
-
-
-
-
-## I want to make some decorator macros
-
-
-But I don't want to have to worry about all the different ways a function could have been written.
-
-
-Consider `@log_trace` that will print the name and args of the function when it is entered.
+`static_hasmethod` is just like `hasmethod` but it resolves at compile-time.
 
 
 ```julia
-@log_trace function foo(x)
-    return 2*x
-end
+using Tricks: static_hasmethod
 
-@log_trace bar(x) = 3*x
+struct Iterable end;
+struct NonIterable end;
 
-qux = @log_trace x->4*x
+function iterableness_dynamic(::Type{T}) where T
+    hasmethod(iterate, Tuple{T}) ? Iterable() : NonIterable()
+end;
+
+function iterableness_static(::Type{T}) where T
+    static_hasmethod(iterate, Tuple{T}) ? Iterable() : NonIterable()
+end;
 ```
 
 
@@ -101,33 +88,34 @@ qux = @log_trace x->4*x
 
 
 
-## How can I write that  with splitdef/combinedef ?
+### This can be used for Tim Holy traits
 
 
 ```julia
-macro log_trace(expr)
-    def = splitdef(expr)
-    name = Meta.quot(get(def, :name, Symbol("<anon>")))
-    def[:body] = quote
-        println("entering ", $name, $(args_tuple_expr(def)))
-        $(def[:body])
-    end
-    combinedef(def)
-end
+my_print(x::T) where T = my_print(iterableness_static(T), x)
+
+my_print(::Iterable, x) = println(join(x, ", ", " & "))
+my_print(::Any, x) = println(x);
 ```
-
-
 
 
 ```julia
-foo(1); bar(2); qux(3)
+my_print([1,2,3])
 ```
 
 
 ```
-entering foo(1,)
-entering bar(2,)
-entering <anon>(3,)
+1, 2 & 3
+```
+
+
+```julia
+my_print(Int)
+```
+
+
+```
+Int64
 ```
 
 
@@ -138,81 +126,20 @@ entering <anon>(3,)
 
 
 
-### What did splitdef do?
+## static_hasmethod means this resolves at compile-time
 
 
 ```julia
-def = splitdef(:(f(x::T, y::Int) where T = x*sizeof(T) + y))
+@code_typed my_print([1,2,3])
 ```
 
 
 ```
-Dict{Symbol, Any} with 5 entries:
-  :args        => Any[:(x::T), :(y::Int)]
-  :body        => quote…
-  :name        => :f
-  :head        => :(=)
-  :whereparams => Any[:T]
-```
-
-
-
-
-
-
-### What did combinedef do?
-
-
-```julia
-combinedef(def)
-```
-
-
-```
-:((f(x::T, y::Int) where T) = begin
-          #= none:1 =#
-          x * sizeof(T) + y
-      end)
-```
-
-
----
-
-
-
-
-### What did splitdef do?
-
-
-```julia
-def = splitdef(:(f(x::T, y::Int) where T = x*sizeof(T) + y))
-```
-
-
-```
-Dict{Symbol, Any} with 5 entries:
-  :args        => Any[:(x::T), :(y::Int)]
-  :body        => quote…
-  :name        => :f
-  :head        => :(=)
-  :whereparams => Any[:T]
-```
-
-
-
-
-
-
-### What did args_tuple_expr do?
-
-
-```julia
-args_tuple_expr(def)
-```
-
-
-```
-:((x, y))
+CodeInfo(
+1 ─ %1 = invoke Base.:(var"#sprint#426")(nothing::Nothing, 0::Int64, sprint::typeof(sprint), join::Function, x::Vector{Int64}, ", "::Vararg{Any}, " & ")::String
+│   %2 = invoke Main.ex-demo.println(%1::String)::Nothing
+└──      return %2
+) => Nothing
 ```
 
 
@@ -223,70 +150,39 @@ args_tuple_expr(def)
 
 
 
-## Automating the delegation pattern
-
-
-  * *"Inheritance via Composition"* is achieved via delegating methods to one of your fields.
-  * I am pretty sure there is not actually 1 delegation pattern but at least 12
-  * People think they want something that just hands it off to a field, but they don't.
-  * e.g. every method of that except first check this thing, then unwrap and then after rewrap if it is the right type.
-
-
-.funfact[The main use I have for this in in defining a operator overloading AD based on what methods of `rrule` exist. if `rrule(f, x)` exist then need to define `f(x::Tracked)`. **Nabla.jl** does exactly this. ]
-
-
----
-
-
-
-
-
-
-### Wrapper Array
-
-
-This is my tracing array. It is like our `@log_trace` macro from before, except it is not by decorating a function but by declaring overloads of a type. We want to overload all functions that take a `Array` as their first argument
+## In-contrast normal hasmethod:
 
 
 ```julia
-julia> meths = [m for m in methodswith(Array) if m.sig <:Tuple{Any, Array, Vararg}]
-[1] similar(a::Array{T}, m::Int64) where T in Base at array.jl:377
-[2] similar(a::Array, T::Type, dims::Tuple{Vararg{Int64, N}}) where N in Base at array.jl:378
-[3] similar(a::Array{T}, dims::Tuple{Vararg{Int64, N}}) where {T, N} in Base at array.jl:379
-[4] copyto!(dest::Array{T}, doffs::Integer, src::Array{T}, soffs::Integer, n::Integer) where T in Base at array.jl:321
-...
+my_print_dyn(x::T) where T = my_print(iterableness_dynamic(T), x)
+@code_typed my_print_dyn([1,2,3])
 ```
 
 
----
-
-
-
-
-
-
-### Lets make our wrapper array
-
-
-```julia
-struct TraceArray{T,N,A<:AbstractArray{T,N}} <: AbstractArray{T,N}
-    data::A
-end
-Base.parent(x::TraceArray) = x.data
-
-
-function generate_overload(m::Method)
-    def = signature(m.sig; extra_hygiene=true)
-    def[:body] = quote
-        orig_args = $(args_tuple_expr(def))
-        args = (parent(orig_args[1]), orig_args[2:end]...)
-        println("entering ", op, args)
-        op(args...)
-    end
-    def[:args][1] = _wrap_arg(def[:args][1])
-    return combinedef(def)
-end
-_wrap_arg(ex) = :($(ex.args[1])::TraceArray{<:Any,<:Any,<:$(ex.args[2])})
+```
+CodeInfo(
+1 ─       invoke Base.to_tuple_type(Tuple{Vector{Int64}}::Any)::Type{Tuple{Vector{Int64}}}
+│   %2  = $(Expr(:foreigncall, :(:jl_gf_invoke_lookup), Any, svec(Any, UInt64), 0, :(:ccall), Tuple{typeof(iterate), Vector{Int64}}, 0xffffffffffffffff, 0xffffffffffffffff))::Any
+│   %3  = (%2 === Base.nothing)::Bool
+│   %4  = Core.Intrinsics.not_int(%3)::Bool
+└──       goto #3 if not %4
+2 ─       goto #4
+3 ─       goto #4
+4 ┄ %8  = φ (#2 => $(QuoteNode(Main.ex-demo.Iterable())), #3 => $(QuoteNode(Main.ex-demo.NonIterable())))::Union{Main.ex-demo.Iterable, Main.ex-demo.NonIterable}
+│   %9  = (isa)(%8, Main.ex-demo.Iterable)::Bool
+└──       goto #6 if not %9
+5 ─ %11 = invoke Base.:(var"#sprint#426")(nothing::Nothing, 0::Int64, sprint::typeof(sprint), join::Function, x::Vector{Int64}, ", "::Vararg{Any}, " & ")::String
+│   %12 = invoke Main.ex-demo.println(%11::String)::Nothing
+└──       goto #9
+6 ─ %14 = (isa)(%8, Main.ex-demo.NonIterable)::Bool
+└──       goto #8 if not %14
+7 ─ %16 = invoke Main.ex-demo.println(x::Vector{Int64})::Nothing
+└──       goto #9
+8 ─       Core.throw(ErrorException("fatal error in type inference (type bound)"))::Union{}
+└──       unreachable
+9 ┄ %20 = φ (#5 => %12, #7 => %16)::Nothing
+└──       return %20
+) => Nothing
 ```
 
 
@@ -297,70 +193,10 @@ _wrap_arg(ex) = :($(ex.args[1])::TraceArray{<:Any,<:Any,<:$(ex.args[2])})
 
 
 
-### What does signature give us?
+# So how does it work?
 
 
-
-
-```julia
-def = signature(first(meths))
-```
-
-
-```
-Dict{Symbol, Any} with 3 entries:
-  :name        => :copyto!
-  :args        => Expr[:(dest::(Array{T, N} where N)), :(doffs::Integer), :(src…
-  :whereparams => Any[:T]
-```
-
-
-```julia
-def[:args]
-```
-
-
-```
-5-element Vector{Expr}:
- :(dest::(Array{T, N} where N))
- :(doffs::Integer)
- :(src::(Array{T, N} where N))
- :(soffs::Integer)
- :(n::Integer)
-```
-
-
----
-
-
-
-
-### Lets make our wrapper array
-
-
-```julia
-generate_overload(first(meths))  |> Base.remove_linenums!
-```
-
-
-```
-:(function (op::typeof(copyto!))(x1::TraceArray{<:Any, <:Any, <:Array{var"##T#2525", N} where N}, x2::Integer, x3::(Array{var"##T#2525", N} where N), x4::Integer, x5::Integer) where var"##T#2525"
-      orig_args = (x1, x2, x3, x4, x5)
-      args = (parent(orig_args[1]), orig_args[2:end]...)
-      println("entering ", op, args)
-      op(args...)
-  end)
-```
-
-
-Lets do them all
-
-
-```julia
-for m in meths
-    eval(generate_overload(m))
-end
-```
+♯265
 
 
 ---
@@ -370,35 +206,16 @@ end
 
 
 
-### Lets try it out
+## Background Terminology
 
 
-```julia
-TraceArray([1 2; 3 4]) .+ 1
-```
+  * **Function:** a (generally named) callable thing that takes some arguments.
 
+      * It can have many *methods* defined for it
+  * **Method:** a particular piece of written code that takes some arguments of particular types and executes on them.
 
-```
-entering size([1 2; 3 4],)
-entering size([1 2; 3 4],)
-entering getindex([1 2; 3 4], CartesianIndex(1, 1))
-entering getindex([1 2; 3 4], CartesianIndex(2, 1))
-entering getindex([1 2; 3 4], CartesianIndex(1, 2))
-entering getindex([1 2; 3 4], CartesianIndex(2, 2))
-```
-
-
-```julia
-TraceArray([1 2; 3 4])[[1,2]]
-```
-
-
-```
-entering length([1 2; 3 4],)
-entering length([1 2; 3 4],)
-entering size([1 2; 3 4],)
-entering reshape([1 2; 3 4], (4,))
-```
+      * It will have a *method instances* generated for it, for each combination of concrete input types.
+  * **Method Instance:** a particular piece of compiled code that operates on concretely typed inputs, generated during specialization.
 
 
 ---
@@ -408,38 +225,73 @@ entering reshape([1 2; 3 4], (4,))
 
 
 
-## How does this work?
+## Background: what is a back-edge?
+
+
+A back-edge is a link from a *method instance* to all *method instances* that use it. 
+
+
+Consider:
 
 
 ```julia
-m = first(meths)
+bar(x) = 10 + x
+foo(x) = 2*bar(x)
+
+foo(3)
 ```
 
-copyto!(dest::<b>Array{T, N} where N</b>, doffs::<b>Integer</b>, src::<b>Array{T, N} where N</b>, soffs::<b>Integer</b>, n::<b>Integer</b>)<i> where T</i> in Base at <a href="https://github.com/JuliaLang/julia/tree/dd122918ceb84dad9063a0866fc7b1262a38d273/base/array.jl#L303" target="_blank">array.jl:303</a>
+
+```
+26
+```
+
+
+That compiled a method instance for `bar(::Int)`, and static dispatched to it from `Foo(::Int)`.
+
 
 ```julia
-m.sig
+bar(x::Integer) = 100 + x
+
+foo(3)
 ```
 
 
 ```
-Tuple{typeof(copyto!), Array{T, N} where N, Integer, Array{T, N} where N, Integer, Integer} where T
+206
 ```
 
 
-```julia
-dump(parameters(m.sig)[2])
-```
 
 
-```
-UnionAll
-  var: TypeVar
-    name: Symbol N
-    lb: Union{}
-    ub: Any
-  body: Array{T, N} <: DenseArray{T, N}
-```
+
+
+## Background: invalidation
+
+
+A back-edge is a link from a *method instance* to all* *method instances* that use it. 
+
+
+When a new more specific method is defined, or when a method is redefined we need to recompile all code that has a *static* dispatch to it.
+
+
+To do this we go through and invalidate everything that we have a back-edge to from our old method instance. And then everything that has a back-edge from that, and so forth.
+
+
+Invalidated method instances are recompiled before their next use.
+
+
+
+
+
+
+## Background: back-edges and method errors
+
+
+A back-edge is a link from a *method instance* to all *method instances* that use it.
+
+
+When a MethodError occurs, what is actually compiled effectively has a back-edge not from a method instance, but from the spot in the Method Table where one would occur, so we can still invalidate that when we define the missing method. 
 
 
 ---
@@ -449,15 +301,13 @@ UnionAll
 
 
 
-# Issues
+## Background: Backedges and generated functions
 
 
-  * This won't pick up new methods defined after it is run.
-  * Everything works on surface syntax: you need to be good at metaprogramming
-  * This make it easy to subvert any kind of reasonable API.
+Normally back-edges are inserted automatically by the compiler. But they are not for the part of generated function that generates the code.
 
 
-<br><br> .unfunfact[ You can use `Base.package_callbacks` to trigger code to run when ever any package is loaded. **ChainRulesOverloadGeneration.jl** uses this to generate any new methods that have been defined. ]
+However, if the generated code is lowered IR CodeInfo – like Zygote.jl or Cassette.jl make use of – then you are allowed to attach back-edges manually. This feature was added so the Zygote could invalidate the derivative methods when the original methods were redefined.
 
 
 ---
@@ -467,17 +317,30 @@ UnionAll
 
 
 
-# Summary
+## How `static_hasmethod` uses backedges
 
 
-  * ExprTools makes it easy to metaprogram method definitions.
-  * You can use reflection to power your metaprogramming
-  * You can define ~700 methods in ~100 lines of code.
-  * Should you? idk, it's a free world
+`static_hasmethod(iterate, Tuple{Foo})` works as follows:
 
 
-<br> .col[ .image-80[![Invenia Heart Julia](assets/invenia_julia.png)]  
+1. run `methods(iterate, Tuple{Foo})`
+2. If return lowered IR for the literal `false` or `true` depending on if empty or not
+3. Attach backedges to the method table if `false` or to every method instance of every method if `true`
+4. If a method is defined (if `false`) or deleted (if `true`), this will be invalidated
 
 
-We use machine learning to optimise the electricity grids.<br> *more Julia, less emissions*<br> Come join us! ]
+
+
+
+
+## Summary
+
+
+  * Tricks.jl makes some extra information actually resolve at compile-time.
+  * It does this by forcing everything that uses that information to recompile whenever it changes.
+  * to do this it (ab)uses the backedge system
+  * the back-edge system lists for every method-instance all places it is (statically) dispatched to
+  * it is used to trigger recompilation of all callers.
+  * Tricks.jl manually connects these back-edges to it's `static_` functions which return literals, and their callers
+  * So they recompile to return different literals when the values have changed.
 

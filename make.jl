@@ -4,7 +4,7 @@ Pkg.activate(pwd())
 using Remark: Remark
 
 function build()
-    dir = Remark.slideshow(@__DIR__, title="ExprTools.jl")
+    dir = Remark.slideshow(@__DIR__, title="Tricks.jl")
 end
 
 slideshow_dir = build()
