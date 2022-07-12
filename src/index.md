@@ -118,9 +118,8 @@ my_print_dyn(x::T) where T = my_print(iterableness_dynamic(T), x)
 ---
 
 ## Background: what is a back-edge?
-A back-edge is a link from a _method instance_ to all _method instances_ that use it. 
+.funfact[A back-edge is a link from a _method instance_ to all _method instances_ that use it via _static dispatch_.]
 
-Consider:
 ```@example demo
 bar(x) = 10 + x
 foo(x) = 2*bar(x)
@@ -135,8 +134,10 @@ bar(x::Integer) = 100 + x
 foo(3)
 ```
 
+---
+
 ## Background: invalidation
-A back-edge is a link from a _method instance_ to all\* _method instances_ that use it. 
+.funfact[A back-edge is a link from a _method instance_ to all _method instances_ that use it via _static dispatch_.] 
 
 When a new more specific method is defined, or when a method is redefined we need to recompile all code that has a *static* dispatch to it.
 
@@ -144,8 +145,11 @@ To do this we go through and invalidate everything that we have a back-edge to f
 And then everything that has a back-edge from that, and so forth.
 
 Invalidated method instances are recompiled before their next use.
+
+---
+
 ## Background: back-edges and method errors
-A back-edge is a link from a _method instance_ to all _method instances_ that use it.
+.funfact[A back-edge is a link from a _method instance_ to all _method instances_ that use it via _static dispatch_.]
 
 When a MethodError occurs, what is actually compiled effectively has a back-edge not from a method instance, but from the spot in the Method Table where one would occur, so we can still invalidate that when we define the missing method. 
 
@@ -157,18 +161,16 @@ Normally back-edges are inserted automatically by the compiler.
 But they are not for the part of generated function that generates the code.
 
 However, if the generated code is lowered IR CodeInfo -- like Zygote.jl or Cassette.jl make use of -- then you are allowed to attach back-edges manually.
+
 This feature was added so the Zygote could invalidate the derivative methods when the original methods were redefined.
 
 ---
 
 ## How `static_hasmethod` uses backedges
 
-`static_hasmethod(iterate, Tuple{Foo})` works as follows:
-1. run `methods(iterate, Tuple{Foo})`
-2. If return lowered IR for the literal `false` or `true` depending on if empty or not
-3. Attach backedges to the method table if `false` or to every method instance of every method if `true`
-4. If a method is defined (if `false`) or deleted (if `true`), this will be invalidated
 
+
+---
 
 ## Summary
  - Tricks.jl makes some extra information actually resolve at compile-time.
