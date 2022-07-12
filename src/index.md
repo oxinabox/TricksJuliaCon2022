@@ -117,7 +117,7 @@ foo(x) = 2*bar(x)
 
 foo(3)
 ```
-That compiled a method instance for `bar(::Int)`, and static dispatched to it from `Foo(::Int)`.
+That compiled a method instance for `bar(::Int)`, and static dispatched to it from `foo(::Int)`.
 
 ```@example demo
 bar(x::Integer) = 100 + x

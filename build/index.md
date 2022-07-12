@@ -228,7 +228,7 @@ foo(3)
 ```
 
 
-That compiled a method instance for `bar(::Int)`, and static dispatched to it from `Foo(::Int)`.
+That compiled a method instance for `bar(::Int)`, and static dispatched to it from `foo(::Int)`.
 
 
 ```julia
