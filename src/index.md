@@ -167,8 +167,8 @@ This feature was added so the Zygote could invalidate the derivative methods whe
 ---
 
 ## How `static_hasmethod` uses backedges
-
-
+<br>
+.image-80[![](assets/static_hasmethod.drawio.svg)]
 
 ---
 
