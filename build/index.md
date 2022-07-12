@@ -16,7 +16,7 @@
 ## Abusing backedges for Fun and Profit
 
 
-<br> <br> <br> .row[ .col[     **Frames White** <br>     Research Software Engineering Group Lead ] .col[ **JuliaCon 2021** .image-60[![InveniaLabs](https://www.invenia.ca/wp-content/themes/relish_theme/img/labs-logo.png)]     ]  ]
+<br> <br> <br> .row[ .col[     **Frames White** <br>     Research Software Engineering Group Lead ] .col[ **JuliaCon 2022** .image-60[![InveniaLabs](https://www.invenia.ca/wp-content/themes/relish_theme/img/labs-logo.png)]     ]  ]
 
 
 

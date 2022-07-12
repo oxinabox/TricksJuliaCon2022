@@ -10,7 +10,7 @@
     Research Software Engineering Group Lead
 ]
 .col[
-**JuliaCon 2021**
+**JuliaCon 2022**
 .image-60[![InveniaLabs](https://www.invenia.ca/wp-content/themes/relish_theme/img/labs-logo.png)]    
 ] 
 ]
