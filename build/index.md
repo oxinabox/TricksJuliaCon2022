@@ -228,10 +228,7 @@ CodeInfo(
 ## Background: what is a back-edge?
 
 
-A back-edge is a link from a *method instance* to all *method instances* that use it. 
-
-
-Consider:
+.funfact[A back-edge is a link from a *method instance* to all *method instances* that use it via *static dispatch*.]
 
 
 ```julia
@@ -262,6 +259,9 @@ foo(3)
 ```
 
 
+---
+
+
 
 
 
@@ -269,7 +269,7 @@ foo(3)
 ## Background: invalidation
 
 
-A back-edge is a link from a *method instance* to all* *method instances* that use it. 
+.funfact[A back-edge is a link from a *method instance* to all *method instances* that use it via *static dispatch*.] 
 
 
 When a new more specific method is defined, or when a method is redefined we need to recompile all code that has a *static* dispatch to it.
@@ -281,6 +281,9 @@ To do this we go through and invalidate everything that we have a back-edge to f
 Invalidated method instances are recompiled before their next use.
 
 
+---
+
+
 
 
 
@@ -288,7 +291,7 @@ Invalidated method instances are recompiled before their next use.
 ## Background: back-edges and method errors
 
 
-A back-edge is a link from a *method instance* to all *method instances* that use it.
+.funfact[A back-edge is a link from a *method instance* to all *method instances* that use it via *static dispatch*.]
 
 
 When a MethodError occurs, what is actually compiled effectively has a back-edge not from a method instance, but from the spot in the Method Table where one would occur, so we can still invalidate that when we define the missing method. 
@@ -307,7 +310,10 @@ When a MethodError occurs, what is actually compiled effectively has a back-edge
 Normally back-edges are inserted automatically by the compiler. But they are not for the part of generated function that generates the code.
 
 
-However, if the generated code is lowered IR CodeInfo – like Zygote.jl or Cassette.jl make use of – then you are allowed to attach back-edges manually. This feature was added so the Zygote could invalidate the derivative methods when the original methods were redefined.
+However, if the generated code is lowered IR CodeInfo – like Zygote.jl or Cassette.jl make use of – then you are allowed to attach back-edges manually.
+
+
+This feature was added so the Zygote could invalidate the derivative methods when the original methods were redefined.
 
 
 ---
@@ -320,13 +326,7 @@ However, if the generated code is lowered IR CodeInfo – like Zygote.jl or Cass
 ## How `static_hasmethod` uses backedges
 
 
-`static_hasmethod(iterate, Tuple{Foo})` works as follows:
-
-
-1. run `methods(iterate, Tuple{Foo})`
-2. If return lowered IR for the literal `false` or `true` depending on if empty or not
-3. Attach backedges to the method table if `false` or to every method instance of every method if `true`
-4. If a method is defined (if `false`) or deleted (if `true`), this will be invalidated
+---
 
 
 
