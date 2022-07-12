@@ -36,22 +36,6 @@
   * Since then Mason Protter has made some nice additions and good clean-up.
 
 
-.funfact[It was proposed to add the key functionality `static_hasmethod` to Base. See PR [#32732](https://github.com/JuliaLang/julia/pull/32732).
-
-
-Jameson said:
-
-
-  * This would be more cleanly implemented with a `tfunc`.
-  * If we added this feature, people would use it, and he thinks that:
-
-      * using this would make invalidations a way bigger problem.
-      * the kind of coding style this allows for is bad.
-
-
-]
-
-
 ---
 
 
@@ -304,10 +288,10 @@ When a MethodError occurs, what is actually compiled effectively has a back-edge
 
 
 
-## Background: Backedges and generated functions
+## Background: Manually adding backedges
 
 
-Normally back-edges are inserted automatically by the compiler. But they are not for the part of generated function that generates the code.
+Normally back-edges are inserted automatically by the compiler.
 
 
 However, if the generated code is lowered IR CodeInfo – like Zygote.jl or Cassette.jl make use of – then you are allowed to attach back-edges manually.
